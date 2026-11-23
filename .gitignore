@@ -1,0 +1,21 @@
+# Chaves e segredos (NUNCA no repositório)
+.env
+*.env
+.env.*
+
+# Ambiente virtual e ficheiros do Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Gerados em cada execução do programa
+cache/
+logs/
+results.csv
+
+# Editores e sistemas operativos
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
