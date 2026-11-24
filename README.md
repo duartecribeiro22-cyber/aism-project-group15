@@ -59,19 +59,50 @@ O script lê-o sozinho. As variáveis definidas no terminal têm prioridade sobr
 
 ## Comandos úteis
 ```bash
-python3 triage.py                                   # as 24 mensagens + accuracy
+python3 triage.py                                   # as 24 mensagens + accuracy (Supervisor v2)
+SUPERVISOR=v1 python3 triage.py                     # mesma avaliação com o Supervisor v1
 python3 triage.py --one "A app fecha sozinha" --email bruno.costa@example.pt
 ```
+No PowerShell, o equivalente a `SUPERVISOR=v1` é `$env:SUPERVISOR = "v1"` antes de correr.
 
-## Variável opcional
+## Saída esperada
+Uma linha por mensagem (etiqueta esperada e obtida, urgência e decisão final) e um resumo no fim.
+Com o Supervisor v2, a corrida que fizemos terminou assim (excerto):
+
+```
+[OK ] #01       esperado=billing   obtido=billing   urg 2->2  => escalate
+[OK ] #04       esperado=billing   obtido=billing   urg 1->1  => send
+[OK ] #08       esperado=technical obtido=technical urg 3->3  => escalate
+[ERR] #11 (amb) esperado=technical obtido=billing   urg 2->2  => escalate
+...
+Accuracy do router:      23/24 = 96%
+  mensagens claras:      19/19
+  mensagens ambíguas:    4/5
+Urgência exata:          19/24
+Enviadas / escaladas:    11 / 13
+Detalhe em results.csv; mensagens entre agentes em logs/messages.jsonl
+```
+Como o modelo não é determinístico, uma corrida sem cache pode dar números ligeiramente diferentes.
+
+## Variáveis opcionais
 | Variável | Valor por defeito | Para quê |
 |---|---|---|
-| `MODEL` | `gemini-3.1-flash-lite` | Os modelos Gemini mudam; se der erro 404, vê o nome atual no AI Studio e define `MODEL` |
+| `MODEL` | `gemini-3.5-flash-lite` | Os modelos Gemini mudam; se der erro 404, vê o nome atual no AI Studio e define `MODEL` |
+| `SUPERVISOR` | `v2` | `v1` para correr com o prompt inicial do Supervisor (sem as duas regras extra) |
 
-## Ficheiros do projeto
-- `triage.py`: os agentes, o pipeline e a avaliação.
-- `data.py`: clientes fictícios, FAQ e as 24 mensagens com a etiqueta e urgência esperadas.
-- `requirements.txt`: dependências (apenas `requests`).
+## Estrutura do repositório
+```
+.
+├── triage.py          # agentes, pipeline (process) e avaliação (evaluate)
+├── data.py            # clientes fictícios, FAQ e as 24 mensagens com etiqueta/urgência esperadas
+├── requirements.txt   # dependências (apenas requests)
+├── README.md
+├── .gitignore         # exclui .env, .venv/, cache/, logs/ e results.csv
+└── results/
+    ├── results_v1.csv # resultados com o Supervisor v1 (16 enviadas / 8 escaladas)
+    └── results_v2.csv # resultados com o Supervisor v2 (11 enviadas / 13 escaladas)
+```
+Os dados são todos fictícios e foram criados por nós; estão em `data.py`.
 
 ## Ficheiros gerados (ao lado do script)
 - `logs/messages.jsonl`: todas as mensagens passadas entre agentes (hand-off). Acumula todas as

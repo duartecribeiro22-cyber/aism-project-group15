@@ -10,8 +10,8 @@ Uso:
     python3 triage.py --one "texto" --email ana.silva@example.pt
 
 Variáveis opcionais:
-    BACKEND = gemini (por defeito)
-    MODEL   = nome do modelo (por defeito gemini-3.5-flash-lite)
+    MODEL      = nome do modelo Gemini (por defeito gemini-3.5-flash-lite)
+    SUPERVISOR = v2 (por defeito) ou v1, para reproduzir as duas configurações do relatório
 """
 import argparse
 import csv
@@ -140,14 +140,22 @@ in European Portuguese. Rules: NEVER admit legal fault or liability ("the error 
 NEVER promise a refund amount or a compensation value. Propose a next step (a call, a review by a
 senior colleague, a deadline to reply). Output ONLY JSON: {"reply": "<draft>", "covered": true}"""
 
-# Versão 2 do Supervisor: acrescenta as duas últimas regras (mensagens com dois problemas
-# e rascunhos que só encaminham o caso). É a versão que gerou o results_1.csv.
-SUPERVISOR_SYS = """You are the SUPERVISOR. You read the customer's original message and a draft reply and decide
+# Supervisor v1: versão inicial (gerou results/results_v1.csv).
+SUPERVISOR_V1 = """You are the SUPERVISOR. You read the customer's original message and a draft reply and decide
+send or escalate to a human. Escalate if: the specialist flagged "not covered"; urgency is 3; the draft
+promises a refund amount, admits legal fault, invents facts, or does not answer what the customer asked.
+Otherwise send. Output ONLY JSON: {"decision": "send" | "escalate", "reason": "<max 20 words>"}"""
+
+# Supervisor v2: acrescenta as duas últimas regras (mensagens com dois problemas e rascunhos
+# que só encaminham o caso). Gerou results/results_v2.csv.
+SUPERVISOR_V2 = """You are the SUPERVISOR. You read the customer's original message and a draft reply and decide
 send or escalate to a human. Escalate if: the specialist flagged "not covered"; urgency is 3; the draft
 promises a refund amount, admits legal fault, invents facts, or does not answer what the customer asked;
 the customer's message has two distinct problems and the draft does not resolve both;
 the draft's only answer is to forward the case to another team.
 Otherwise send. Output ONLY JSON: {"decision": "send" | "escalate", "reason": "<max 20 words>"}"""
+
+SUPERVISOR_SYS = SUPERVISOR_V1 if os.environ.get("SUPERVISOR", "v2").lower() == "v1" else SUPERVISOR_V2
 
 
 def router(text: str) -> dict:
