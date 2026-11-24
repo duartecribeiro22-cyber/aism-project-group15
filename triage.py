@@ -68,19 +68,19 @@ def _gemini(system: str, user: str) -> str:
     }
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent"
     headers = {"x-goog-api-key": key}
-    for attempt in range(5):
+    for attempt in range(8):
         r = requests.post(url, json=body, headers=headers, timeout=60)
-        if r.status_code == 429:  # limite do plano gratuito
+        if r.status_code in (429, 500, 502, 503, 504):  # limite da quota ou servidor sobrecarregado
             wait = 15 * (attempt + 1)
-            print(f"  [Gemini 429] limite atingido, a esperar {wait}s...", file=sys.stderr)
+            print(f"  [Gemini {r.status_code}] temporário, a esperar {wait}s...", file=sys.stderr)
             time.sleep(wait)
             continue
         if not r.ok:
             raise RuntimeError(f"Gemini {r.status_code}: {r.text[:300]}")
         break
     else:
-        raise RuntimeError("Gemini: limite (429) persistente. Se for o limite diário, volta a correr "
-                           "mais tarde: a cache guarda o progresso.")
+        raise RuntimeError("Gemini: erro temporário persistente (429/503). Volta a correr daqui a uns "
+                           "minutos: a cache guarda o progresso.")
     try:
         return r.json()["candidates"][0]["content"]["parts"][0]["text"]
     except (KeyError, IndexError):
